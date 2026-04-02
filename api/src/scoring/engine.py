@@ -424,6 +424,43 @@ class ScoringEngine:
             # Step 3: Persist
             await self._persist(run_id, records, scores)
 
+            # Step 4: Stale candidate detection
+            # Titles in media_items that are no longer in *arr responses
+            # were deleted outside Swabbarr — auto-move to removal_history
+            current_tmdb_ids = {r.tmdb_id for r in records}
+            stale_count = 0
+            async with self._db.acquire() as conn:
+                existing = await conn.fetch(
+                    "SELECT id, tmdb_id, title, media_type, file_size_bytes "
+                    "FROM media_items"
+                )
+                for row in existing:
+                    if row["tmdb_id"] not in current_tmdb_ids:
+                        # Get last score
+                        last_score = await conn.fetchval(
+                            "SELECT keep_score FROM media_scores "
+                            "WHERE media_item_id = $1 ORDER BY scored_at DESC LIMIT 1",
+                            row["id"],
+                        )
+                        await conn.execute(
+                            """
+                            INSERT INTO removal_history (
+                                media_item_id, tmdb_id, title, media_type,
+                                file_size_bytes, final_keep_score
+                            ) VALUES ($1, $2, $3, $4, $5, $6)
+                            """,
+                            row["id"], row["tmdb_id"], row["title"],
+                            row["media_type"], row["file_size_bytes"],
+                            float(last_score) if last_score else None,
+                        )
+                        stale_count += 1
+
+            if stale_count > 0:
+                self._log.info(
+                    f"Stale detection: {stale_count} titles removed outside "
+                    f"Swabbarr — moved to removal history"
+                )
+
             # Finalize run
             candidates = [s for s in scores if s.is_candidate]
             reclaimable = sum(s.file_size_bytes for s in candidates)

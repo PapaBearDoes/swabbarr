@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { getRemovalHistory } from '@/lib/api';
+import { getRemovalHistory, exportHistoryCSV } from '@/lib/api';
 import { formatBytes, formatScore, timeAgo } from '@/lib/utils';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Download } from 'lucide-react';
 
 export default function HistoryPage() {
   const [removals, setRemovals] = useState<any[]>([]);
@@ -35,7 +35,12 @@ export default function HistoryPage() {
 
   return (
     <div>
-      <h1 style={{ fontSize: 28, fontWeight: 800, marginBottom: 24 }}>Removal History</h1>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+        <h1 style={{ fontSize: 28, fontWeight: 800 }}>Removal History</h1>
+        <a href={exportHistoryCSV()} className="btn btn-sm" download>
+          <Download size={14} /> Export CSV
+        </a>
+      </div>
 
       <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
         <div className="stat-card">

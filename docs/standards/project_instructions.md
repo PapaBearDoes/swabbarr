@@ -196,9 +196,9 @@ TMDB API ──────┘
 | 3 | Scoring engine — formula, signal calculators, persistence | ✅ Complete |
 | 4 | FastAPI endpoints — scores, config, media, actions | ✅ Complete |
 | 5 | Dashboard MVP — score table, filters, removal workflow | ✅ Complete |
-| 6 | Scheduled runs, notifications, trend tracking | 🔄 Backend Complete |
+| 6 | Scheduled runs, notifications, trend tracking | ✅ Complete |
 | 7 | TMDB integration — streaming availability, cultural value | ✅ Complete |
-| 8 | Removal tracking — mark removed, history, reclaim reporting | ⬜ Planned |
+| 8 | Removal tracking — mark removed, history, reclaim reporting | ✅ Complete |
 
 See `docs/dev/planning.md` for full deliverable lists and notes per phase.
 

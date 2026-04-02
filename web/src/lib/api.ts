@@ -69,3 +69,15 @@ export const getRunHistory = (params?: string) =>
 // Health
 export const getHealth = () => apiFetch<any>("/api/health");
 export const getServiceStatus = () => apiFetch<any>("/api/health/services");
+
+
+// Batch & Export (Phase 8)
+export const batchMarkRemoved = (tmdbIds: number[]) =>
+  apiFetch<any>('/api/actions/remove-batch', {
+    method: 'POST',
+    body: JSON.stringify({ tmdb_ids: tmdbIds }),
+  });
+export const exportCandidatesCSV = () =>
+  `${API_BASE}/api/actions/export/candidates`;
+export const exportHistoryCSV = () =>
+  `${API_BASE}/api/actions/export/history`;

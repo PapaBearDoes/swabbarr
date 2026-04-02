@@ -16,9 +16,9 @@
 | 3 | Scoring Engine | ✅ Complete | Phase 2 |
 | 4 | FastAPI Endpoints | ✅ Complete | Phase 3 |
 | 5 | Dashboard MVP | ✅ Complete | Phase 4 |
-| 6 | Scheduling & Notifications | 🔄 In Progress | Phase 4 |
+| 6 | Scheduling & Notifications | ✅ Complete | Phase 4 |
 | 7 | TMDB Integration (Rarity & Cultural) | ✅ Complete | Phase 3 |
-| 8 | Removal Tracking & Reporting | ⬜ Planned | Phase 5 |
+| 8 | Removal Tracking & Reporting | ✅ Complete | Phase 5 |
 
 **Note:** Phases 6, 7, and 8 can be worked in parallel once their dependencies are met.
 
@@ -660,12 +660,12 @@ space reclaimed over time.
 
 | # | Deliverable | Status | Notes |
 |---|-------------|--------|-------|
-| 8.1 | Mark-as-removed API endpoint | ⬜ | Moves item to removal_history |
-| 8.2 | Batch mark-as-removed | ⬜ | Select multiple and mark at once |
-| 8.3 | Removal history dashboard page | ⬜ | Timeline of removals with sizes |
-| 8.4 | Space reclaimed reporting | ⬜ | Cumulative chart, progress toward 7.5 TB goal |
-| 8.5 | Stale candidate detection | ⬜ | Flag candidates that disappeared from *arrs |
-| 8.6 | Export functionality | ⬜ | CSV export of candidates or removal history |
+| 8.1 | Mark-as-removed API endpoint | ✅ Complete | Built in Phase 4 |
+| 8.2 | Batch mark-as-removed | ✅ Complete | POST /api/actions/remove-batch |
+| 8.3 | Removal history dashboard page | ✅ Complete | Built in Phase 5, export added |
+| 8.4 | Space reclaimed reporting | ✅ Complete | Progress bar + cumulative tracking |
+| 8.5 | Stale candidate detection | ✅ Complete | Auto-detects in scoring engine Step 4 |
+| 8.6 | Export functionality | ✅ Complete | CSV export for candidates + history |
 
 ### Implementation Notes
 

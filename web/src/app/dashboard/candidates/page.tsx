@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { getCandidates, markRemoved } from '@/lib/api';
-import { formatBytes, formatScore, timeAgo } from '@/lib/utils';
-import { Trash2, CheckCircle } from 'lucide-react';
+import { getCandidates, markRemoved, batchMarkRemoved, exportCandidatesCSV } from '@/lib/api';
+import { formatBytes, formatScore } from '@/lib/utils';
+import { Trash2, CheckCircle, Download } from 'lucide-react';
 
 export default function CandidatesPage() {
   const [candidates, setCandidates] = useState<any[]>([]);
@@ -12,6 +12,8 @@ export default function CandidatesPage() {
   const [mediaType, setMediaType] = useState('');
   const [loading, setLoading] = useState(true);
   const [removing, setRemoving] = useState<number | null>(null);
+  const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [batchRemoving, setBatchRemoving] = useState(false);
   const perPage = 50;
 
   const fetchData = useCallback(async () => {
@@ -25,6 +27,7 @@ export default function CandidatesPage() {
       const data = await getCandidates(params.toString());
       setCandidates(data.scores || []);
       setTotal(data.total || 0);
+      setSelected(new Set());
     } catch (e) { console.error(e); }
     setLoading(false);
   }, [page, mediaType]);
@@ -32,27 +35,72 @@ export default function CandidatesPage() {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const handleRemove = async (tmdbId: number) => {
-    if (!confirm('Mark this title as removed? (Make sure you\'ve already deleted it in Radarr/Sonarr)')) return;
+    if (!confirm('Mark this title as removed? (Make sure you\'ve deleted it in Radarr/Sonarr first)')) return;
     setRemoving(tmdbId);
     try {
       await markRemoved(tmdbId);
       setCandidates(prev => prev.filter(c => c.tmdb_id !== tmdbId));
       setTotal(prev => prev - 1);
+      setSelected(prev => { const s = new Set(prev); s.delete(tmdbId); return s; });
     } catch (e) { console.error(e); }
     setRemoving(null);
   };
 
+  const handleBatchRemove = async () => {
+    if (selected.size === 0) return;
+    if (!confirm(`Mark ${selected.size} titles as removed? (Make sure you've deleted them in Radarr/Sonarr first)`)) return;
+    setBatchRemoving(true);
+    try {
+      await batchMarkRemoved(Array.from(selected));
+      setCandidates(prev => prev.filter(c => !selected.has(c.tmdb_id)));
+      setTotal(prev => prev - selected.size);
+      setSelected(new Set());
+    } catch (e) { console.error(e); }
+    setBatchRemoving(false);
+  };
+
+  const toggleSelect = (tmdbId: number) => {
+    setSelected(prev => {
+      const s = new Set(prev);
+      if (s.has(tmdbId)) s.delete(tmdbId); else s.add(tmdbId);
+      return s;
+    });
+  };
+
+  const toggleAll = () => {
+    if (selected.size === candidates.length) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(candidates.map(c => c.tmdb_id)));
+    }
+  };
+
   const totalSize = candidates.reduce((sum, c) => sum + (c.file_size_bytes || 0), 0);
+  const selectedSize = candidates.filter(c => selected.has(c.tmdb_id)).reduce((s, c) => s + (c.file_size_bytes || 0), 0);
   const totalPages = Math.ceil(total / perPage);
 
   return (
     <div>
-      <h1 style={{ fontSize: 28, fontWeight: 800, marginBottom: 8 }}>Removal Candidates</h1>
-      <p style={{ color: 'var(--text-secondary)', marginBottom: 24, fontSize: 14 }}>
-        Titles scoring below threshold. Delete in Radarr/Sonarr first, then mark as removed here.
-      </p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+        <div>
+          <h1 style={{ fontSize: 28, fontWeight: 800 }}>Removal Candidates</h1>
+          <p style={{ color: 'var(--text-secondary)', fontSize: 14, marginTop: 4 }}>
+            Titles scoring below threshold. Delete in Radarr/Sonarr first, then mark as removed here.
+          </p>
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <a href={exportCandidatesCSV()} className="btn btn-sm" download>
+            <Download size={14} /> Export CSV
+          </a>
+          {selected.size > 0 && (
+            <button className="btn btn-danger" onClick={handleBatchRemove} disabled={batchRemoving}>
+              <Trash2 size={14} /> {batchRemoving ? 'Removing...' : `Remove ${selected.size} Selected (${formatBytes(selectedSize)})`}
+            </button>
+          )}
+        </div>
+      </div>
 
-      <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
+      <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)', marginTop: 16 }}>
         <div className="stat-card">
           <div className="stat-label">Candidates</div>
           <div className="stat-value" style={{ color: 'var(--score-low)' }}>{total}</div>
@@ -75,6 +123,9 @@ export default function CandidatesPage() {
         <table className="data-table">
           <thead>
             <tr>
+              <th style={{ width: 40 }}>
+                <input type="checkbox" checked={selected.size === candidates.length && candidates.length > 0} onChange={toggleAll} />
+              </th>
               <th>Title</th>
               <th>Type</th>
               <th>Score</th>
@@ -86,13 +137,14 @@ export default function CandidatesPage() {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={7} style={{ textAlign: 'center', padding: 40, color: 'var(--text-secondary)' }}>Loading...</td></tr>
+              <tr><td colSpan={8} style={{ textAlign: 'center', padding: 40, color: 'var(--text-secondary)' }}>Loading...</td></tr>
             ) : candidates.length === 0 ? (
-              <tr><td colSpan={7} style={{ textAlign: 'center', padding: 40, color: 'var(--text-secondary)' }}>
+              <tr><td colSpan={8} style={{ textAlign: 'center', padding: 40, color: 'var(--text-secondary)' }}>
                 <CheckCircle size={32} style={{ marginBottom: 8, opacity: 0.5 }} /><br />No removal candidates. Your library is in good shape!
               </td></tr>
             ) : candidates.map((c: any) => (
-              <tr key={c.tmdb_id}>
+              <tr key={c.tmdb_id} style={{ background: selected.has(c.tmdb_id) ? 'var(--bg-elevated)' : undefined }}>
+                <td><input type="checkbox" checked={selected.has(c.tmdb_id)} onChange={() => toggleSelect(c.tmdb_id)} /></td>
                 <td><div style={{ fontWeight: 600 }}>{c.title}</div><div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{c.year}</div></td>
                 <td><span style={{ fontSize: 12, textTransform: 'uppercase', color: 'var(--text-secondary)' }}>{c.media_type}</span></td>
                 <td><span className="score-badge score-low">{formatScore(c.keep_score)}</span></td>
@@ -101,7 +153,7 @@ export default function CandidatesPage() {
                 <td><span style={{ fontSize: 13 }}>{formatScore(c.request_score || 0)}</span></td>
                 <td>
                   <button className="btn btn-danger btn-sm" onClick={() => handleRemove(c.tmdb_id)} disabled={removing === c.tmdb_id}>
-                    <Trash2 size={14} /> {removing === c.tmdb_id ? 'Removing...' : 'Mark Removed'}
+                    <Trash2 size={14} /> {removing === c.tmdb_id ? '...' : 'Remove'}
                   </button>
                 </td>
               </tr>
