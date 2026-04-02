@@ -156,6 +156,7 @@ async def list_scores(
 async def list_candidates(
     request: Request,
     media_type: str | None = Query(None, regex="^(movie|series)$"),
+    arr_source: str | None = Query(None, regex="^(radarr|sonarr|sonarr-anime)$"),
     sort_by: str = Query("keep_score", regex="^(keep_score|file_size|title)$"),
     sort_order: str = Query("asc", regex="^(asc|desc)$"),
     page: int = Query(1, ge=1),
@@ -180,6 +181,11 @@ async def list_candidates(
             params.append(media_type)
             idx += 1
 
+        if arr_source:
+            conditions.append(f"mi.arr_source = ${idx}")
+            params.append(arr_source)
+            idx += 1
+
         where = " AND ".join(conditions)
         sort_map = {"keep_score": "ms.keep_score", "file_size": "mi.file_size_bytes", "title": "mi.title"}
         order_col = sort_map.get(sort_by, "ms.keep_score")
@@ -199,6 +205,7 @@ async def list_candidates(
             f"""
             SELECT mi.tmdb_id, mi.title, mi.year, mi.media_type,
                    mi.file_size_bytes, mi.poster_url, mi.episode_count,
+                   mi.arr_source,
                    ms.keep_score, ms.watch_activity_score, ms.rarity_score,
                    ms.request_score, ms.size_efficiency_score,
                    ms.cultural_value_score
