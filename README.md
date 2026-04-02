@@ -52,7 +52,7 @@ All components run as Docker containers, orchestrated by `docker-compose.yml`.
 
 ### External Services (read-only API access)
 - [Tautulli](https://tautulli.com/) — Plex usage tracking
-- [Overseerr / Jellyseerr](https://overseerr.dev/) — Media request management
+- [Seerr](https://seerr.dev/) — Media request management
 - [Radarr](https://radarr.video/) — Movie management
 - [Sonarr](https://sonarr.tv/) — TV series management
 - [TMDB API key](https://www.themoviedb.org/documentation/api) — Streaming availability, ratings (optional)
@@ -110,16 +110,6 @@ swabbarr/
 ├── docker-compose.yml
 └── .env.template
 ```
-
----
-
-## Documentation
-
-| Document | Purpose |
-|----------|---------|
-| [Charter](docs/standards/charter.md) | Architecture rules (14 rules) |
-| [Project Instructions](docs/standards/project_instructions.md) | Infrastructure, conventions |
-| [Planning](docs/dev/planning.md) | Phase status, deliverables, schema design |
 
 ---
 
