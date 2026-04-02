@@ -191,8 +191,8 @@ TMDB API ──────┘
 | Phase | Description | Status |
 |-------|-------------|--------|
 | 0 | Standards documents, repo scaffold | ✅ Complete |
-| 1 | Docker Compose skeleton, DB schema, secrets pattern | ⬜ Planned |
-| 2 | External API clients (Tautulli, Seerr, Radarr, Sonarr) | ⬜ Planned |
+| 1 | Docker Compose skeleton, DB schema, secrets pattern | ✅ Complete |
+| 2 | External API clients (Tautulli, Seerr, Radarr, Sonarr) | ✅ Complete |
 | 3 | Scoring engine — formula, signal calculators, persistence | ⬜ Planned |
 | 4 | FastAPI endpoints — scores, config, media, actions | ⬜ Planned |
 | 5 | Dashboard MVP — score table, filters, removal workflow | ⬜ Planned |

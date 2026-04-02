@@ -11,8 +11,8 @@
 | Phase | Description | Status | Dependencies |
 |-------|-------------|--------|-------------|
 | 0 | Standards & Scaffold | ✅ Complete | None |
-| 1 | Docker Compose, DB Schema, Secrets | 🔄 In Progress | Phase 0 |
-| 2 | External API Clients | ⬜ Planned | Phase 1 |
+| 1 | Docker Compose, DB Schema, Secrets | ✅ Complete | Phase 0 |
+| 2 | External API Clients | ✅ Complete | Phase 1 |
 | 3 | Scoring Engine | ⬜ Planned | Phase 2 |
 | 4 | FastAPI Endpoints | ⬜ Planned | Phase 3 |
 | 5 | Dashboard MVP | ⬜ Planned | Phase 4 |
@@ -228,11 +228,11 @@ and to provide a data snapshot for auditability.
 
 | # | Deliverable | Status | Notes |
 |---|-------------|--------|-------|
-| 2.1 | `api/src/clients/tautulli_client.py` | ⬜ | Watch history, play counts, completion % |
-| 2.2 | `api/src/clients/seerr_client.py` | ⬜ | Request history, requestor identity |
-| 2.3 | `api/src/clients/radarr_client.py` | ⬜ | Movie metadata, file size, TMDB ID |
-| 2.4 | `api/src/clients/sonarr_client.py` | ⬜ | Series metadata, episode counts, file size |
-| 2.5 | `api/src/clients/base_client.py` | ⬜ | Shared httpx logic, retry, timeout |
+| 2.1 | `api/src/clients/tautulli_client.py` | ✅ Complete | Watch history, play counts, aggregation |
+| 2.2 | `api/src/clients/seerr_client.py` | ✅ Complete | Paginated requests, TMDB ID mapping |
+| 2.3 | `api/src/clients/radarr_client.py` | ✅ Complete | Movie metadata, file size, TMDB ID |
+| 2.4 | `api/src/clients/sonarr_client.py` | ✅ Complete | Series metadata, TVDB/TMDB IDs, arr_source |
+| 2.5 | `api/src/clients/base_client.py` | ✅ Complete | Retry, backoff, timeout, health check |
 
 ### Implementation Notes
 
