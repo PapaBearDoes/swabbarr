@@ -8,7 +8,7 @@ fetch data → merge into unified records → apply signal calculators →
 compute weighted scores → persist results to PostgreSQL.
 
 ----------------------------------------------------------------------------
-FILE VERSION: v1.2.0
+FILE VERSION: v1.2.1
 LAST MODIFIED: 2026-04-02
 COMPONENT: swabbarr-api
 CLEAN ARCHITECTURE: Compliant
@@ -318,6 +318,32 @@ class ScoringEngine:
         return scores
 
     # -----------------------------------------------------------------------
+    # Timestamp parsing for asyncpg (expects datetime, not strings)
+    # -----------------------------------------------------------------------
+    @staticmethod
+    def _parse_ts(value) -> datetime | None:
+        """Convert a timestamp value to a datetime for asyncpg.
+
+        Handles ISO strings, Unix epoch ints/floats, and passthrough for
+        datetime objects. Returns None if unparseable.
+        """
+        if value is None:
+            return None
+        if isinstance(value, datetime):
+            return value
+        if isinstance(value, (int, float)):
+            try:
+                return datetime.fromtimestamp(value, tz=timezone.utc)
+            except (OSError, ValueError):
+                return None
+        if isinstance(value, str):
+            try:
+                return datetime.fromisoformat(value.replace("Z", "+00:00"))
+            except (ValueError, TypeError):
+                return None
+        return None
+
+    # -----------------------------------------------------------------------
     # Step 3: Persist results to PostgreSQL
     # -----------------------------------------------------------------------
     async def _persist(
@@ -347,7 +373,7 @@ class ScoringEngine:
                         updated_at = NOW()
                     """,
                     record.tmdb_id, record.media_type, record.title,
-                    record.year, record.added_at, record.file_size_bytes,
+                    record.year, self._parse_ts(record.added_at), record.file_size_bytes,
                     record.quality_profile, record.arr_id, record.arr_source,
                     record.episode_count,
                 )
@@ -393,9 +419,9 @@ class ScoringEngine:
                     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
                     """,
                     item_id, run_id, record.total_plays,
-                    record.unique_viewers, record.last_watched_at,
+                    record.unique_viewers, self._parse_ts(record.last_watched_at),
                     record.avg_completion_pct, record.requested_by,
-                    record.requestor_watched, record.request_date,
+                    record.requestor_watched, self._parse_ts(record.request_date),
                 )
 
     # -----------------------------------------------------------------------
