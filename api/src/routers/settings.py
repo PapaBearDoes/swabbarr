@@ -7,7 +7,7 @@ Settings router — manage external service connections (URLs, API keys)
 through the dashboard instead of Docker Secrets.
 
 ----------------------------------------------------------------------------
-FILE VERSION: v1.0.0
+FILE VERSION: v1.0.1
 LAST MODIFIED: 2026-04-02
 COMPONENT: swabbarr-api
 CLEAN ARCHITECTURE: Compliant
@@ -94,7 +94,9 @@ async def verify_service(request: Request, service_name: str):
     s = await settings.get_service(service_name)
     if not s:
         raise HTTPException(status_code=404, detail="Service not found")
-    if not s.base_url or not s.api_key:
+    # TMDB only needs an API key (base URL is hardcoded in the client)
+    requires_url = service_name not in ("tmdb",)
+    if (requires_url and not s.base_url) or not s.api_key:
         await settings.update_verify_status(service_name, "not_configured")
         return {"status": "not_configured", "message": "URL or API key missing"}
 
