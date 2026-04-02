@@ -10,6 +10,7 @@ export default function CandidatesPage() {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [mediaType, setMediaType] = useState('');
+  const [arrSource, setArrSource] = useState('');
   const [loading, setLoading] = useState(true);
   const [removing, setRemoving] = useState<number | null>(null);
   const [selected, setSelected] = useState<Set<number>>(new Set());
@@ -25,13 +26,14 @@ export default function CandidatesPage() {
         sort_by: 'keep_score', sort_order: 'asc',
       });
       if (mediaType) params.set('media_type', mediaType);
+      if (arrSource) params.set('arr_source', arrSource);
       const data = await getCandidates(params.toString());
       setCandidates(data.scores || []);
       setTotal(data.total || 0);
       setSelected(new Set());
     } catch (e) { console.error(e); }
     setLoading(false);
-  }, [page, mediaType]);
+  }, [page, mediaType, arrSource]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -126,10 +128,17 @@ export default function CandidatesPage() {
         </div>
         <div className="stat-card">
           <div className="stat-label">Filter</div>
-          <select className="filter-select" style={{ marginTop: 8 }} value={mediaType} onChange={e => { setMediaType(e.target.value); setPage(1); }}>
-            <option value="">All Types</option>
-            <option value="movie">Movies</option>
-            <option value="series">TV Series</option>
+          <select className="filter-select" style={{ marginTop: 8 }} value={`${mediaType}|${arrSource}`} onChange={e => {
+            const [mt, as_] = e.target.value.split('|');
+            setMediaType(mt);
+            setArrSource(as_);
+            setPage(1);
+          }}>
+            <option value="|">All Types</option>
+            <option value="movie|">Movies</option>
+            <option value="series|sonarr">TV Series</option>
+            <option value="series|sonarr-anime">Anime</option>
+            <option value="series|">All Series</option>
           </select>
         </div>
       </div>
@@ -173,7 +182,7 @@ export default function CandidatesPage() {
                   >{c.title}</a>
                   <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{c.year}</div>
                 </td>
-                <td><span style={{ fontSize: 12, textTransform: 'uppercase', color: 'var(--text-secondary)' }}>{c.media_type}</span></td>
+                <td><span style={{ fontSize: 12, textTransform: 'uppercase', color: 'var(--text-secondary)' }}>{c.arr_source === 'sonarr-anime' ? 'anime' : c.media_type}</span></td>
                 <td><span className="score-badge score-low">{formatScore(c.keep_score)}</span></td>
                 <td>{formatBytes(c.file_size_bytes)}</td>
                 <td><span style={{ fontSize: 13 }}>{formatScore(c.rarity_score || 0)}</span></td>
