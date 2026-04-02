@@ -53,11 +53,6 @@ services:
       SWABBARR_DB_PORT: ${SWABBARR_DB_PORT:-5432}
       SWABBARR_DB_NAME: ${SWABBARR_DB_NAME:-swabbarr}
       SWABBARR_DB_USER: ${SWABBARR_DB_USER:-swabbarr}
-      SWABBARR_TAUTULLI_URL: ${SWABBARR_TAUTULLI_URL:-}
-      SWABBARR_RADARR_URL: ${SWABBARR_RADARR_URL:-}
-      SWABBARR_SONARR_URL: ${SWABBARR_SONARR_URL:-}
-      SWABBARR_SONARR_ANIME_URL: ${SWABBARR_SONARR_ANIME_URL:-}
-      SWABBARR_SEERR_URL: ${SWABBARR_SEERR_URL:-}
       SWABBARR_TMDB_REGION: ${SWABBARR_TMDB_REGION:-US}
       SWABBARR_SCORE_CRON: ${SWABBARR_SCORE_CRON:-0 3 * * 0}
       SWABBARR_API_HOST: ${SWABBARR_API_HOST:-0.0.0.0}
@@ -66,12 +61,7 @@ services:
       SWABBARR_HTTP_RETRIES: ${SWABBARR_HTTP_RETRIES:-3}
     secrets:
       - swabbarr_db_password
-      - swabbarr_tautulli_api_key
-      - swabbarr_radarr_api_key
-      - swabbarr_sonarr_api_key
-      - swabbarr_sonarr_anime_api_key
-      - swabbarr_seerr_api_key
-      - swabbarr_tmdb_api_key
+      - swabbarr_encryption_key
     ports:
       - "${SWABBARR_API_PORT:-8484}:8484"
 
@@ -97,18 +87,8 @@ services:
 secrets:
   swabbarr_db_password:
     file: ./api/secrets/swabbarr_db_password
-  swabbarr_tautulli_api_key:
-    file: ./api/secrets/swabbarr_tautulli_api_key
-  swabbarr_radarr_api_key:
-    file: ./api/secrets/swabbarr_radarr_api_key
-  swabbarr_sonarr_api_key:
-    file: ./api/secrets/swabbarr_sonarr_api_key
-  swabbarr_sonarr_anime_api_key:
-    file: ./api/secrets/swabbarr_sonarr_anime_api_key
-  swabbarr_seerr_api_key:
-    file: ./api/secrets/swabbarr_seerr_api_key
-  swabbarr_tmdb_api_key:
-    file: ./api/secrets/swabbarr_tmdb_api_key
+  swabbarr_encryption_key:
+    file: ./api/secrets/swabbarr_encryption_key
 
 # ----------------------------------------------------------------------------
 # Volumes

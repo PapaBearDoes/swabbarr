@@ -8,38 +8,37 @@ This directory holds Docker Secret files for the swabbarr-api container.
 | Filename | Purpose |
 |----------|---------|
 | `swabbarr_db_password` | PostgreSQL password |
-| `swabbarr_tautulli_api_key` | Tautulli API key |
-| `swabbarr_radarr_api_key` | Radarr API key |
-| `swabbarr_sonarr_api_key` | Sonarr API key |
-| `swabbarr_sonarr_anime_api_key` | Sonarr-Anime API key |
-| `swabbarr_seerr_api_key` | Seerr API key |
+| `swabbarr_encryption_key` | Encryption passphrase for API keys stored in the DB |
 
-## Optional Secrets
-
-| Filename | Purpose |
-|----------|---------|
-| `swabbarr_tmdb_api_key` | TMDB API key (enables rarity + cultural scoring) |
+**All other API keys** (Tautulli, Radarr, Sonarr, Seerr, TMDB) are configured
+through the Swabbarr dashboard Settings page and stored encrypted in PostgreSQL.
+No individual API key secret files are needed.
 
 ## Setup
 
-Create each file with the secret value as plain text, no trailing newline:
+Create each file with the secret value as plain text:
 
 ```bash
-echo -n "your-api-key-here" > swabbarr_tautulli_api_key
-echo -n "your-api-key-here" > swabbarr_radarr_api_key
+# Database password
+echo -n "your-db-password" > swabbarr_db_password
+
+# Encryption key (generate a strong random key)
+openssl rand -base64 32 > swabbarr_encryption_key
 ```
 
 Or on Windows (PowerShell):
 
 ```powershell
-Set-Content -NoNewline -Path "swabbarr_tautulli_api_key" -Value "your-api-key-here"
-Set-Content -NoNewline -Path "swabbarr_radarr_api_key" -Value "your-api-key-here"
+Set-Content -NoNewline -Path "swabbarr_db_password" -Value "your-db-password"
+
+# For the encryption key, use any strong passphrase or random string
+Set-Content -NoNewline -Path "swabbarr_encryption_key" -Value "your-strong-passphrase-here"
 ```
 
-## Finding Your API Keys
+## After Setup
 
-- **Tautulli:** Settings → Web Interface → API Key
-- **Radarr:** Settings → General → API Key
-- **Sonarr:** Settings → General → API Key
-- **Seerr:** Settings → General → API Key
-- **TMDB:** https://www.themoviedb.org/settings/api → API Read Access Token
+1. Start the stack: `docker compose up -d`
+2. Open the dashboard: `http://localhost:3000`
+3. Go to **Settings** and configure each service (URL + API key)
+4. Click **Verify** to test connectivity
+5. Enable services and run your first scoring cycle

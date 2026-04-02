@@ -188,10 +188,42 @@ CREATE TABLE IF NOT EXISTS tmdb_cache (
 CREATE INDEX IF NOT EXISTS idx_tmdb_cache_tmdb_id ON tmdb_cache (tmdb_id);
 
 -- ----------------------------------------------------------------------------
+-- Table: service_settings
+-- Stores external service connection info (URLs and API keys).
+-- API keys are stored encrypted using pgcrypto. The encryption passphrase
+-- is the only value that remains a Docker Secret.
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS service_settings (
+    id              SERIAL PRIMARY KEY,
+    service_name    VARCHAR(50) NOT NULL UNIQUE,
+    display_name    VARCHAR(100) NOT NULL,
+    base_url        VARCHAR(500),
+    api_key_enc     BYTEA,
+    enabled         BOOLEAN NOT NULL DEFAULT FALSE,
+    last_verified   TIMESTAMPTZ,
+    verify_status   VARCHAR(20) DEFAULT 'unknown',
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TRIGGER trg_service_settings_updated_at
+    BEFORE UPDATE ON service_settings
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- ----------------------------------------------------------------------------
 -- Seed data: default scoring weights (single row)
 -- ----------------------------------------------------------------------------
 INSERT INTO scoring_weights (watch_activity, rarity, request_accountability, size_efficiency, cultural_value, candidate_threshold)
 VALUES (40.00, 20.00, 15.00, 15.00, 10.00, 30.00)
+ON CONFLICT DO NOTHING;
+
+-- Seed data: service connection settings (all unconfigured by default)
+INSERT INTO service_settings (service_name, display_name) VALUES
+    ('tautulli', 'Tautulli'),
+    ('radarr', 'Radarr'),
+    ('sonarr', 'Sonarr'),
+    ('sonarr_anime', 'Sonarr (Anime)'),
+    ('seerr', 'Seerr'),
+    ('tmdb', 'TMDB')
 ON CONFLICT DO NOTHING;
 
 -- ----------------------------------------------------------------------------

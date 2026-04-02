@@ -81,3 +81,15 @@ export const exportCandidatesCSV = () =>
   `${API_BASE}/api/actions/export/candidates`;
 export const exportHistoryCSV = () =>
   `${API_BASE}/api/actions/export/history`;
+
+// Settings
+export const getSettings = () =>
+  apiFetch<any>('/api/settings');
+export const getServiceSettings = (name: string) =>
+  apiFetch<any>(`/api/settings/${name}`);
+export const updateServiceSettings = (name: string, data: any) =>
+  apiFetch<any>(`/api/settings/${name}`, {
+    method: 'PUT', body: JSON.stringify(data),
+  });
+export const verifyService = (name: string) =>
+  apiFetch<any>(`/api/settings/${name}/verify`, { method: 'POST' });

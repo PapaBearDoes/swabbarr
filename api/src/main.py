@@ -8,8 +8,8 @@ Manages application lifespan (startup/shutdown), database initialization,
 and router registration.
 
 ----------------------------------------------------------------------------
-FILE VERSION: v1.3.0
-LAST MODIFIED: 2026-04-01
+FILE VERSION: v1.4.0
+LAST MODIFIED: 2026-04-02
 COMPONENT: swabbarr-api
 CLEAN ARCHITECTURE: Compliant
 Repository: https://github.com/PapaBearDoes/swabbarr
@@ -23,8 +23,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.managers.logging_config_manager import create_logging_config_manager
-from src.managers.db_manager import create_db_manager, _read_secret
+from src.managers.db_manager import create_db_manager
 from src.managers.config_manager import create_config_manager
+from src.managers.settings_manager import create_settings_manager
 from src.clients.radarr_client import create_radarr_client
 from src.clients.sonarr_client import create_sonarr_client
 from src.clients.tautulli_client import create_tautulli_client
@@ -58,71 +59,46 @@ async def lifespan(application: FastAPI):
     application.state.db_manager = db_manager
     log.success("Database manager ready")
 
-    # API Clients (Phase 2)
+    # Settings manager (reads service configs from DB)
+    settings_manager = create_settings_manager(
+        db_manager=db_manager,
+        log=log_manager.get_logger("settings_manager"),
+    )
+    application.state.settings_manager = settings_manager
+    log.success("Settings manager ready")
+
+    # API Clients — initialized from DB settings
     clients = {}
-
-    # Radarr
-    radarr_url = os.environ.get("SWABBARR_RADARR_URL", "")
-    if radarr_url:
-        radarr_key = _read_secret("/run/secrets/swabbarr_radarr_api_key")
-        clients["radarr"] = create_radarr_client(
-            base_url=radarr_url, api_key=radarr_key,
-            log=log_manager.get_logger("radarr_client"),
-        )
-        await clients["radarr"].health_check()
-
-    # Sonarr
-    sonarr_url = os.environ.get("SWABBARR_SONARR_URL", "")
-    if sonarr_url:
-        sonarr_key = _read_secret("/run/secrets/swabbarr_sonarr_api_key")
-        clients["sonarr"] = create_sonarr_client(
-            base_url=sonarr_url, api_key=sonarr_key,
-            log=log_manager.get_logger("sonarr_client"),
-            arr_source="sonarr",
-        )
-        await clients["sonarr"].health_check()
-
-    # Sonarr-Anime
-    sonarr_anime_url = os.environ.get("SWABBARR_SONARR_ANIME_URL", "")
-    if sonarr_anime_url:
-        sonarr_anime_key = _read_secret("/run/secrets/swabbarr_sonarr_anime_api_key")
-        clients["sonarr_anime"] = create_sonarr_client(
-            base_url=sonarr_anime_url, api_key=sonarr_anime_key,
-            log=log_manager.get_logger("sonarr_anime_client"),
-            arr_source="sonarr-anime",
-        )
-        await clients["sonarr_anime"].health_check()
-
-    # Tautulli
-    tautulli_url = os.environ.get("SWABBARR_TAUTULLI_URL", "")
-    if tautulli_url:
-        tautulli_key = _read_secret("/run/secrets/swabbarr_tautulli_api_key")
-        clients["tautulli"] = create_tautulli_client(
-            base_url=tautulli_url, api_key=tautulli_key,
-            log=log_manager.get_logger("tautulli_client"),
-        )
-        await clients["tautulli"].health_check()
-
-    # Seerr
-    seerr_url = os.environ.get("SWABBARR_SEERR_URL", "")
-    if seerr_url:
-        seerr_key = _read_secret("/run/secrets/swabbarr_seerr_api_key")
-        clients["seerr"] = create_seerr_client(
-            base_url=seerr_url, api_key=seerr_key,
-            log=log_manager.get_logger("seerr_client"),
-        )
-        await clients["seerr"].health_check()
-
-    # TMDB (Phase 7)
     try:
-        tmdb_key = _read_secret("/run/secrets/swabbarr_tmdb_api_key")
-        clients["tmdb"] = create_tmdb_client(
-            api_key=tmdb_key,
-            log=log_manager.get_logger("tmdb_client"),
-        )
-        await clients["tmdb"].health_check()
-    except RuntimeError:
-        log.info("TMDB API key not configured — scoring without streaming/cultural data")
+        services = await settings_manager.get_all_services()
+        for svc in services:
+            if not svc.enabled or not svc.base_url or not svc.api_key:
+                continue
+            try:
+                if svc.service_name == "radarr":
+                    clients["radarr"] = create_radarr_client(
+                        svc.base_url, svc.api_key, log_manager.get_logger("radarr_client"))
+                elif svc.service_name == "sonarr":
+                    clients["sonarr"] = create_sonarr_client(
+                        svc.base_url, svc.api_key, log_manager.get_logger("sonarr_client"), arr_source="sonarr")
+                elif svc.service_name == "sonarr_anime":
+                    clients["sonarr_anime"] = create_sonarr_client(
+                        svc.base_url, svc.api_key, log_manager.get_logger("sonarr_anime_client"), arr_source="sonarr-anime")
+                elif svc.service_name == "tautulli":
+                    clients["tautulli"] = create_tautulli_client(
+                        svc.base_url, svc.api_key, log_manager.get_logger("tautulli_client"))
+                elif svc.service_name == "seerr":
+                    clients["seerr"] = create_seerr_client(
+                        svc.base_url, svc.api_key, log_manager.get_logger("seerr_client"))
+                elif svc.service_name == "tmdb":
+                    clients["tmdb"] = create_tmdb_client(
+                        svc.api_key, log_manager.get_logger("tmdb_client"))
+                await clients[svc.service_name].health_check()
+            except Exception as e:
+                log.warning(f"Failed to initialize {svc.service_name}: {e}")
+    except Exception as e:
+        log.warning(f"Could not load service settings from DB: {e}")
+        log.info("Services can be configured via the dashboard Settings page")
 
     application.state.clients = clients
     log.success(f"API clients initialized: {list(clients.keys())}")
@@ -190,10 +166,11 @@ app.add_middleware(
 # ---------------------------------------------------------------------------
 # Routers (Phase 4)
 # ---------------------------------------------------------------------------
-from src.routers import scores, config, media, actions, health
+from src.routers import scores, config, media, actions, health, settings
 
 app.include_router(scores.router, prefix="/api/scores", tags=["scores"])
 app.include_router(config.router, prefix="/api/config", tags=["config"])
 app.include_router(media.router, prefix="/api/media", tags=["media"])
 app.include_router(actions.router, prefix="/api/actions", tags=["actions"])
 app.include_router(health.router, prefix="/api/health", tags=["health"])
+app.include_router(settings.router, prefix="/api/settings", tags=["settings"])

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  BarChart3, Target, Settings, History, Shield, Activity,
+  BarChart3, Target, Settings, History, Shield, Activity, Plug,
 } from 'lucide-react';
 
 const navItems = [
@@ -12,6 +12,7 @@ const navItems = [
   { href: '/dashboard/config', label: 'Configuration', icon: Settings },
   { href: '/dashboard/protected', label: 'Protected', icon: Shield },
   { href: '/dashboard/history', label: 'Removal History', icon: History },
+  { href: '/dashboard/settings', label: 'Settings', icon: Plug },
 ];
 
 export default function Sidebar() {
