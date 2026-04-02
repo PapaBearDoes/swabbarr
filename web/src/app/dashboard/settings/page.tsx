@@ -54,6 +54,23 @@ export default function SettingsPage() {
     setMessage('');
   };
 
+  const handleToggleEnabled = async (idx: number, enabled: boolean) => {
+    const svc = services[idx];
+    setServices(prev => prev.map((s, i) =>
+      i === idx ? { ...s, editEnabled: enabled, enabled } : s
+    ));
+    try {
+      await updateServiceSettings(svc.service_name, { enabled });
+      setMessage(`${svc.display_name} ${enabled ? 'enabled' : 'disabled'}`);
+    } catch (e: any) {
+      // Revert on failure
+      setServices(prev => prev.map((s, i) =>
+        i === idx ? { ...s, editEnabled: !enabled, enabled: !enabled } : s
+      ));
+      setMessage(e.message || 'Failed to update');
+    }
+  };
+
   const handleSave = async (idx: number) => {
     const svc = services[idx];
     setServices(prev => prev.map((s, i) => i === idx ? { ...s, saving: true } : s));
@@ -64,12 +81,15 @@ export default function SettingsPage() {
       };
       if (svc.editKey) update.api_key = svc.editKey;
       await updateServiceSettings(svc.service_name, update);
+      // Backend auto-enables when an API key is saved
+      const nowEnabled = svc.editKey ? true : svc.editEnabled;
       setServices(prev => prev.map((s, i) =>
         i === idx ? {
           ...s, saving: false, dirty: false, editKey: '',
           base_url: svc.editUrl,
           has_api_key: svc.editKey ? true : s.has_api_key,
-          enabled: svc.editEnabled,
+          enabled: nowEnabled,
+          editEnabled: nowEnabled,
         } : s
       ));
       setMessage(`${svc.display_name} settings saved`);
@@ -126,7 +146,7 @@ export default function SettingsPage() {
                 <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{svc.verify_status}</span>
               </div>
               <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13 }}>
-                <input type="checkbox" checked={svc.editEnabled} onChange={e => updateField(idx, 'editEnabled', e.target.checked)} />
+                <input type="checkbox" checked={svc.editEnabled} onChange={e => handleToggleEnabled(idx, e.target.checked)} />
                 Enabled
               </label>
             </div>

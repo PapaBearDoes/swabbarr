@@ -8,7 +8,7 @@ Manages application lifespan (startup/shutdown), database initialization,
 and router registration.
 
 ----------------------------------------------------------------------------
-FILE VERSION: v1.5.0
+FILE VERSION: v1.5.1
 LAST MODIFIED: 2026-04-02
 COMPONENT: swabbarr-api
 CLEAN ARCHITECTURE: Compliant
@@ -80,9 +80,14 @@ async def lifespan(application: FastAPI):
             for svc in services:
                 # TMDB has no base_url — it's hardcoded in the client
                 requires_url = svc.service_name not in ("tmdb",)
-                if not svc.enabled or not svc.api_key:
+                if not svc.enabled:
+                    log.debug(f"Skipping {svc.service_name} — not enabled")
+                    continue
+                if not svc.api_key:
+                    log.debug(f"Skipping {svc.service_name} — no API key")
                     continue
                 if requires_url and not svc.base_url:
+                    log.debug(f"Skipping {svc.service_name} — no base URL")
                     continue
                 try:
                     if svc.service_name == "radarr":

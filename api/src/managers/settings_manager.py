@@ -8,7 +8,7 @@ API keys are encrypted at rest using pgcrypto. The encryption passphrase
 is the only Docker Secret required.
 
 ----------------------------------------------------------------------------
-FILE VERSION: v1.0.0
+FILE VERSION: v1.0.1
 LAST MODIFIED: 2026-04-02
 COMPONENT: swabbarr-api
 CLEAN ARCHITECTURE: Compliant
@@ -157,6 +157,12 @@ class SettingsManager:
                     """,
                     api_key, self._passphrase, service_name,
                 )
+                # Auto-enable when an API key is provided
+                if enabled is None:
+                    await conn.execute(
+                        "UPDATE service_settings SET enabled = TRUE WHERE service_name = $1",
+                        service_name,
+                    )
 
             if enabled is not None:
                 await conn.execute(
