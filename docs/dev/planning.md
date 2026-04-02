@@ -13,8 +13,8 @@
 | 0 | Standards & Scaffold | ✅ Complete | None |
 | 1 | Docker Compose, DB Schema, Secrets | ✅ Complete | Phase 0 |
 | 2 | External API Clients | ✅ Complete | Phase 1 |
-| 3 | Scoring Engine | ⬜ Planned | Phase 2 |
-| 4 | FastAPI Endpoints | ⬜ Planned | Phase 3 |
+| 3 | Scoring Engine | ✅ Complete | Phase 2 |
+| 4 | FastAPI Endpoints | ✅ Complete | Phase 3 |
 | 5 | Dashboard MVP | ⬜ Planned | Phase 4 |
 | 6 | Scheduling & Notifications | ⬜ Planned | Phase 4 |
 | 7 | TMDB Integration (Rarity & Cultural) | ⬜ Planned | Phase 3 |
@@ -300,10 +300,10 @@ results to PostgreSQL.
 
 | # | Deliverable | Status | Notes |
 |---|-------------|--------|-------|
-| 3.1 | `api/src/scoring/models.py` | ⬜ | Pydantic models for media records, scores |
-| 3.2 | `api/src/scoring/signals.py` | ⬜ | Five signal calculators |
-| 3.3 | `api/src/scoring/engine.py` | ⬜ | Orchestrator: fetch → merge → score → persist |
-| 3.4 | `api/src/managers/config_manager.py` | ⬜ | Read scoring weights from DB |
+| 3.1 | `api/src/scoring/models.py` | ✅ Complete | MediaRecord, ScoreBreakdown, ScoringWeights, ScoringRunResult |
+| 3.2 | `api/src/scoring/signals.py` | ✅ Complete | All 5 signal calculators with formulas |
+| 3.3 | `api/src/scoring/engine.py` | ✅ Complete | Full pipeline: fetch → merge → score → persist |
+| 3.4 | `api/src/managers/config_manager.py` | ✅ Complete | Read/write weights with sum-to-100 validation |
 
 ### Signal Calculator Details
 
@@ -397,11 +397,11 @@ configuration, media details, and action triggers.
 
 | # | Deliverable | Status | Notes |
 |---|-------------|--------|-------|
-| 4.1 | `api/src/routers/scores.py` | ⬜ | Score listing, filtering, sorting |
-| 4.2 | `api/src/routers/config.py` | ⬜ | Read/update scoring weights |
-| 4.3 | `api/src/routers/media.py` | ⬜ | Media details, protect/unprotect |
-| 4.4 | `api/src/routers/actions.py` | ⬜ | Trigger scoring run, mark removed |
-| 4.5 | `api/src/routers/health.py` | ⬜ | Health check, service status |
+| 4.1 | `api/src/routers/scores.py` | ✅ Complete | 5 endpoints: list, candidates, summary, detail, history |
+| 4.2 | `api/src/routers/config.py` | ✅ Complete | 4 endpoints: get/put weights, get/put threshold |
+| 4.3 | `api/src/routers/media.py` | ✅ Complete | 4 endpoints: detail, protect, unprotect, list protected |
+| 4.4 | `api/src/routers/actions.py` | ✅ Complete | 4 endpoints: trigger run, status, mark removed, history |
+| 4.5 | `api/src/routers/health.py` | ✅ Complete | 2 endpoints: health check, service status |
 
 ### Endpoint Design
 

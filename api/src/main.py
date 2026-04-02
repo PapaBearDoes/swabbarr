@@ -8,7 +8,7 @@ Manages application lifespan (startup/shutdown), database initialization,
 and router registration.
 
 ----------------------------------------------------------------------------
-FILE VERSION: v1.1.0
+FILE VERSION: v1.2.0
 LAST MODIFIED: 2026-04-01
 COMPONENT: swabbarr-api
 CLEAN ARCHITECTURE: Compliant
@@ -24,10 +24,12 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from src.managers.logging_config_manager import create_logging_config_manager
 from src.managers.db_manager import create_db_manager, _read_secret
+from src.managers.config_manager import create_config_manager
 from src.clients.radarr_client import create_radarr_client
 from src.clients.sonarr_client import create_sonarr_client
 from src.clients.tautulli_client import create_tautulli_client
 from src.clients.seerr_client import create_seerr_client
+from src.scoring.engine import create_scoring_engine
 
 
 # ---------------------------------------------------------------------------
@@ -112,7 +114,22 @@ async def lifespan(application: FastAPI):
     application.state.clients = clients
     log.success(f"API clients initialized: {list(clients.keys())}")
 
-    # TODO Phase 3: Initialize scoring engine
+    # Scoring engine (Phase 3)
+    config_manager = create_config_manager(
+        db_manager=db_manager,
+        log=log_manager.get_logger("config_manager"),
+    )
+    application.state.config_manager = config_manager
+
+    scoring_engine = create_scoring_engine(
+        db_manager=db_manager,
+        config_manager=config_manager,
+        clients=clients,
+        log=log_manager.get_logger("scoring_engine"),
+    )
+    application.state.scoring_engine = scoring_engine
+    log.success("Scoring engine ready")
+
     # TODO Phase 6: Initialize APScheduler
 
     log.success("Swabbarr API startup complete")
@@ -151,21 +168,12 @@ app.add_middleware(
 
 
 # ---------------------------------------------------------------------------
-# Health endpoint (always available, expanded in Phase 4)
+# Routers (Phase 4)
 # ---------------------------------------------------------------------------
-@app.get("/api/health")
-async def health_check():
-    """Basic health check — returns 200 if the API is running."""
-    return {
-        "status": "healthy",
-        "service": "swabbarr-api",
-        "version": "0.1.0",
-    }
+from src.routers import scores, config, media, actions, health
 
-
-# TODO Phase 4: Register routers
-# from src.routers import scores, config, media, actions
-# app.include_router(scores.router, prefix="/api/scores", tags=["scores"])
-# app.include_router(config.router, prefix="/api/config", tags=["config"])
-# app.include_router(media.router, prefix="/api/media", tags=["media"])
-# app.include_router(actions.router, prefix="/api/actions", tags=["actions"])
+app.include_router(scores.router, prefix="/api/scores", tags=["scores"])
+app.include_router(config.router, prefix="/api/config", tags=["config"])
+app.include_router(media.router, prefix="/api/media", tags=["media"])
+app.include_router(actions.router, prefix="/api/actions", tags=["actions"])
+app.include_router(health.router, prefix="/api/health", tags=["health"])

@@ -193,8 +193,8 @@ TMDB API ──────┘
 | 0 | Standards documents, repo scaffold | ✅ Complete |
 | 1 | Docker Compose skeleton, DB schema, secrets pattern | ✅ Complete |
 | 2 | External API clients (Tautulli, Seerr, Radarr, Sonarr) | ✅ Complete |
-| 3 | Scoring engine — formula, signal calculators, persistence | ⬜ Planned |
-| 4 | FastAPI endpoints — scores, config, media, actions | ⬜ Planned |
+| 3 | Scoring engine — formula, signal calculators, persistence | ✅ Complete |
+| 4 | FastAPI endpoints — scores, config, media, actions | ✅ Complete |
 | 5 | Dashboard MVP — score table, filters, removal workflow | ⬜ Planned |
 | 6 | Scheduled runs, notifications, trend tracking | ⬜ Planned |
 | 7 | TMDB integration — streaming availability, cultural value | ⬜ Planned |
