@@ -162,7 +162,17 @@ export default function CandidatesPage() {
             ) : candidates.map((c: any) => (
               <tr key={c.tmdb_id} style={{ background: selected.has(c.tmdb_id) ? 'var(--bg-elevated)' : undefined }}>
                 <td><input type="checkbox" checked={selected.has(c.tmdb_id)} onChange={() => toggleSelect(c.tmdb_id)} /></td>
-                <td><div style={{ fontWeight: 600 }}>{c.title}</div><div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{c.year}</div></td>
+                <td>
+                  <a
+                    href={`https://www.themoviedb.org/${c.media_type === 'series' ? 'tv' : 'movie'}/${c.tmdb_id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ fontWeight: 600, color: 'var(--text-primary)', textDecoration: 'none' }}
+                    onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent-teal)')}
+                    onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-primary)')}
+                  >{c.title}</a>
+                  <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{c.year}</div>
+                </td>
                 <td><span style={{ fontSize: 12, textTransform: 'uppercase', color: 'var(--text-secondary)' }}>{c.media_type}</span></td>
                 <td><span className="score-badge score-low">{formatScore(c.keep_score)}</span></td>
                 <td>{formatBytes(c.file_size_bytes)}</td>
