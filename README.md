@@ -2,11 +2,7 @@
 
 **Media Library Pruning Engine**
 
-Swabbarr connects to your existing *arr stack (Radarr, Sonarr, Seerr) and Plex
-ecosystem (via Tautulli) to score every movie and TV series in your library based
-on watch activity, request history, rarity, cultural value, and storage footprint —
-then surfaces the best removal candidates through a web dashboard so you can make
-informed decisions about what to keep and what to toss.
+Swabbarr connects to your existing *arr stack (Radarr, Sonarr, Seerr) and Plex ecosystem (via Tautulli) to score every movie and TV series in your library based on watch activity, request history, rarity, cultural value, and storage footprint — then surfaces the best removal candidates through a web dashboard so you can make informed decisions about what to keep and what to toss.
 
 **The name:** "Swabbing the deck" — cleaning up what's cluttering the ship.
 
@@ -16,8 +12,7 @@ informed decisions about what to keep and what to toss.
 
 ## How It Works
 
-Every title in your library receives a **keep score** from 0–100. Lower scores are
-stronger removal candidates. The score is a weighted sum of five signals:
+Every title in your library receives a **keep score** from 0–100. Lower scores are stronger removal candidates. The score is a weighted sum of five signals:
 
 | Signal | Default Weight | Source |
 |--------|---------------|--------|
@@ -27,8 +22,7 @@ stronger removal candidates. The score is a weighted sum of five signals:
 | Size Efficiency | 15% | Radarr / Sonarr |
 | Cultural Value | 10% | TMDB |
 
-Weights are fully configurable through the web dashboard. Scoring runs happen on a
-schedule (weekly by default) or on-demand via the dashboard.
+Weights are fully configurable through the web dashboard. Scoring runs happen on a schedule (weekly by default) or on-demand via the dashboard.
 
 ### Data Flow
 
