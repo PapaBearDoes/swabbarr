@@ -8,7 +8,7 @@ Manages application lifespan (startup/shutdown), database initialization,
 and router registration.
 
 ----------------------------------------------------------------------------
-FILE VERSION: v1.2.0
+FILE VERSION: v1.3.0
 LAST MODIFIED: 2026-04-01
 COMPONENT: swabbarr-api
 CLEAN ARCHITECTURE: Compliant
@@ -30,6 +30,7 @@ from src.clients.sonarr_client import create_sonarr_client
 from src.clients.tautulli_client import create_tautulli_client
 from src.clients.seerr_client import create_seerr_client
 from src.scoring.engine import create_scoring_engine
+from src.managers.scheduler_manager import create_scheduler_manager
 
 
 # ---------------------------------------------------------------------------
@@ -130,7 +131,13 @@ async def lifespan(application: FastAPI):
     application.state.scoring_engine = scoring_engine
     log.success("Scoring engine ready")
 
-    # TODO Phase 6: Initialize APScheduler
+    # Scheduler (Phase 6)
+    scheduler = create_scheduler_manager(
+        scoring_engine=scoring_engine,
+        log=log_manager.get_logger("scheduler"),
+    )
+    scheduler.start()
+    application.state.scheduler = scheduler
 
     log.success("Swabbarr API startup complete")
 
@@ -138,6 +145,7 @@ async def lifespan(application: FastAPI):
 
     # --- Shutdown ---
     log.info("Swabbarr API shutting down")
+    application.state.scheduler.stop()
     for name, client in application.state.clients.items():
         await client.close()
     await db_manager.close()

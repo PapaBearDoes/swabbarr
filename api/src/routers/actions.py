@@ -18,6 +18,7 @@ Repository: https://github.com/PapaBearDoes/swabbarr
 import asyncio
 
 from fastapi import APIRouter, Request, HTTPException, Query
+from pydantic import BaseModel
 
 router = APIRouter()
 
@@ -61,11 +62,14 @@ async def trigger_scoring_run(request: Request):
 # GET /api/actions/status — Current run status
 # ---------------------------------------------------------------------------
 @router.get("/status")
-async def get_status():
-    """Get current scoring run status."""
+async def get_status(request: Request):
+    """Get current scoring run status and schedule info."""
+    scheduler = getattr(request.app.state, "scheduler", None)
+    schedule_info = scheduler.get_schedule() if scheduler else None
     return {
         "running": _scoring_status["running"],
         "last_result": _scoring_status["last_result"],
+        "schedule": schedule_info,
     }
 
 
@@ -156,6 +160,75 @@ async def removal_history(
         "removals": [dict(r) for r in rows],
         "total": count_row["total"],
         "total_removed_bytes": total_removed,
+        "page": page,
+        "per_page": per_page,
+    }
+
+
+# ---------------------------------------------------------------------------
+# GET /api/actions/schedule — Get current schedule
+# ---------------------------------------------------------------------------
+@router.get("/schedule")
+async def get_schedule(request: Request):
+    """Get the current scoring schedule."""
+    scheduler = getattr(request.app.state, "scheduler", None)
+    if not scheduler:
+        raise HTTPException(status_code=503, detail="Scheduler not initialized")
+    return scheduler.get_schedule()
+
+
+class ScheduleUpdate(BaseModel):
+    """Request body for updating the schedule."""
+    cron_expression: str
+
+
+# ---------------------------------------------------------------------------
+# PUT /api/actions/schedule — Update schedule
+# ---------------------------------------------------------------------------
+@router.put("/schedule")
+async def update_schedule(request: Request, body: ScheduleUpdate):
+    """Update the scoring schedule cron expression."""
+    scheduler = getattr(request.app.state, "scheduler", None)
+    if not scheduler:
+        raise HTTPException(status_code=503, detail="Scheduler not initialized")
+
+    success = scheduler.update_schedule(body.cron_expression)
+    if not success:
+        raise HTTPException(status_code=400, detail="Invalid cron expression")
+    return scheduler.get_schedule()
+
+
+# ---------------------------------------------------------------------------
+# GET /api/actions/runs — Scoring run history
+# ---------------------------------------------------------------------------
+@router.get("/runs")
+async def run_history(
+    request: Request,
+    page: int = Query(1, ge=1),
+    per_page: int = Query(20, ge=1, le=100),
+):
+    """Get past scoring run history with stats."""
+    db = request.app.state.db_manager
+    async with db.acquire() as conn:
+        count_row = await conn.fetchrow(
+            "SELECT COUNT(*) as total FROM scoring_runs"
+        )
+        offset = (page - 1) * per_page
+        rows = await conn.fetch(
+            """
+            SELECT id, started_at, completed_at, trigger,
+                   titles_scored, candidates_flagged,
+                   space_reclaimable_bytes, partial_data, notes
+            FROM scoring_runs
+            ORDER BY started_at DESC
+            LIMIT $1 OFFSET $2
+            """,
+            per_page, offset,
+        )
+
+    return {
+        "runs": [dict(r) for r in rows],
+        "total": count_row["total"],
         "page": page,
         "per_page": per_page,
     }

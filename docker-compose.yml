@@ -76,18 +76,20 @@ services:
       - "${SWABBARR_API_PORT:-8484}:8484"
 
   # --------------------------------------------------------------------------
-  # swabbarr-web — Next.js Dashboard (Phase 5)
+  # swabbarr-web — Next.js Dashboard
   # --------------------------------------------------------------------------
-  # swabbarr-web:
-  #   build:
-  #     context: ./web
-  #     dockerfile: Dockerfile
-  #   container_name: swabbarr-web
-  #   restart: unless-stopped
-  #   depends_on:
-  #     - swabbarr-api
-  #   ports:
-  #     - "3000:3000"
+  swabbarr-web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    container_name: swabbarr-web
+    restart: unless-stopped
+    depends_on:
+      - swabbarr-api
+    environment:
+      NEXT_PUBLIC_API_URL: http://swabbarr-api:8484
+    ports:
+      - "3000:3000"
 
 # ----------------------------------------------------------------------------
 # Secrets

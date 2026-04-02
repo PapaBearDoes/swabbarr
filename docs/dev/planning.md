@@ -15,8 +15,8 @@
 | 2 | External API Clients | ✅ Complete | Phase 1 |
 | 3 | Scoring Engine | ✅ Complete | Phase 2 |
 | 4 | FastAPI Endpoints | ✅ Complete | Phase 3 |
-| 5 | Dashboard MVP | ⬜ Planned | Phase 4 |
-| 6 | Scheduling & Notifications | ⬜ Planned | Phase 4 |
+| 5 | Dashboard MVP | ✅ Complete | Phase 4 |
+| 6 | Scheduling & Notifications | 🔄 In Progress | Phase 4 |
 | 7 | TMDB Integration (Rarity & Cultural) | ⬜ Planned | Phase 3 |
 | 8 | Removal Tracking & Reporting | ⬜ Planned | Phase 5 |
 
@@ -473,16 +473,16 @@ candidates, adjust weights, protect titles, and mark removals.
 
 | # | Deliverable | Status | Notes |
 |---|-------------|--------|-------|
-| 5.1 | Next.js project scaffold | ⬜ | App Router, TypeScript, Tailwind |
-| 5.2 | `web/Dockerfile` | ⬜ | Multi-stage Node build |
-| 5.3 | Dashboard layout + navigation | ⬜ | Sidebar: Scores, Candidates, Config, History |
-| 5.4 | Score table page | ⬜ | Sortable, filterable, paginated |
-| 5.5 | Candidate review page | ⬜ | Below-threshold titles, "mark removed" action |
-| 5.6 | Title detail modal/page | ⬜ | Score breakdown, watch history, trend chart |
-| 5.7 | Configuration page | ⬜ | Weight sliders, threshold adjustment |
-| 5.8 | Protected titles page | ⬜ | List + add/remove protection |
-| 5.9 | Removal history page | ⬜ | Historical removals, total space reclaimed |
-| 5.10 | Dashboard summary | ⬜ | Library size, space used, candidates count, next run |
+| 5.1 | Next.js project scaffold | ✅ Complete | App Router, TypeScript, Tailwind 4 |
+| 5.2 | `web/Dockerfile` | ✅ Complete | Multi-stage Node 22 build |
+| 5.3 | Dashboard layout + navigation | ✅ Complete | Sidebar with 5 nav items |
+| 5.4 | Score table page | ✅ Complete | Sortable, filterable, paginated, summary stats |
+| 5.5 | Candidate review page | ✅ Complete | Mark-removed workflow with confirmation |
+| 5.6 | Title detail modal/page | ⬜ Planned | Post-MVP refinement |
+| 5.7 | Configuration page | ✅ Complete | Weight sliders, threshold, schedule presets |
+| 5.8 | Protected titles page | ✅ Complete | List + unprotect buttons |
+| 5.9 | Removal history page | ✅ Complete | Timeline, space reclaimed, progress bar |
+| 5.10 | Dashboard summary | ✅ Complete | Integrated into scores page header |
 
 ### Dashboard Pages
 
@@ -543,11 +543,11 @@ when new candidates are flagged.
 
 | # | Deliverable | Status | Notes |
 |---|-------------|--------|-------|
-| 6.1 | APScheduler integration in `main.py` | ⬜ | Cron-based trigger inside FastAPI lifespan |
-| 6.2 | Schedule configuration endpoint | ⬜ | Read/update cron expression via API |
-| 6.3 | Run history page (dashboard) | ⬜ | Past runs with stats, partial data warnings |
-| 6.4 | Dashboard schedule display | ⬜ | Next run time, last run summary |
-| 6.5 | Notification system (optional) | ⬜ | Webhook/email when new candidates appear |
+| 6.1 | APScheduler integration in `main.py` | ✅ Complete | SchedulerManager + lifespan wiring |
+| 6.2 | Schedule configuration endpoint | ✅ Complete | GET/PUT /api/actions/schedule |
+| 6.3 | Run history page (dashboard) | ⬜ Planned | Frontend — Phase 5 |
+| 6.4 | Dashboard schedule display | ⬜ Planned | Frontend — Phase 5 |
+| 6.5 | Notification system (optional) | ⬜ Planned | Stretch goal — post-MVP |
 
 ### Implementation Notes
 

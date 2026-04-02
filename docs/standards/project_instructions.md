@@ -195,8 +195,8 @@ TMDB API ──────┘
 | 2 | External API clients (Tautulli, Seerr, Radarr, Sonarr) | ✅ Complete |
 | 3 | Scoring engine — formula, signal calculators, persistence | ✅ Complete |
 | 4 | FastAPI endpoints — scores, config, media, actions | ✅ Complete |
-| 5 | Dashboard MVP — score table, filters, removal workflow | ⬜ Planned |
-| 6 | Scheduled runs, notifications, trend tracking | ⬜ Planned |
+| 5 | Dashboard MVP — score table, filters, removal workflow | ✅ Complete |
+| 6 | Scheduled runs, notifications, trend tracking | 🔄 Backend Complete |
 | 7 | TMDB integration — streaming availability, cultural value | ⬜ Planned |
 | 8 | Removal tracking — mark removed, history, reclaim reporting | ⬜ Planned |
 

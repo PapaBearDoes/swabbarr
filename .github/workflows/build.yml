@@ -1,0 +1,214 @@
+# ============================================================================
+# Swabbarr — GitHub Actions Workflow
+# ============================================================================
+# FILE VERSION: v1.0.0
+# Repository: https://github.com/PapaBearDoes/swabbarr
+# ============================================================================
+#
+# Builds and pushes Swabbarr Docker images to GHCR:
+#   - swabbarr-api  (Python / FastAPI + scoring engine)
+#   - swabbarr-web  (Node / Next.js dashboard)
+#
+# On main branch: after all images are built, deploys to the K8s cluster
+# on Lofn via SSH → kubectl rolling update.
+#
+# Uses Docker layer caching to speed up builds.
+#
+# Required GitHub Secrets:
+#   GITHUB_TOKEN          — automatic, for GHCR push
+#   LOFN_SSH_KEY          — private SSH key for deploy user on Lofn
+#   LOFN_SSH_USER         — SSH username on Lofn
+#
+# GHCR Pull Access (private repo):
+#   Since this repo is private, GHCR packages are also private.
+#   Lofn needs a pull credential to access the images:
+#
+#   Option A (Docker Compose on Lofn):
+#     docker login ghcr.io -u PapaBearDoes -p <PAT with read:packages>
+#
+#   Option B (K8s on Lofn):
+#     kubectl create secret docker-registry ghcr-pull-secret \
+#       --namespace=swabbarr \
+#       --docker-server=ghcr.io \
+#       --docker-username=PapaBearDoes \
+#       --docker-password=<PAT with read:packages>
+#     Then add imagePullSecrets to each deployment spec.
+#
+# Deploy connectivity:
+#   GitHub Actions → SSH → Lofn (10.20.30.253) → kubectl
+#
+# ============================================================================
+
+name: Build and Push Swabbarr Images
+
+on:
+  push:
+    branches: [main, 'dev/**', 'feature/**']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+
+    strategy:
+      matrix:
+        include:
+          - component: api
+            image: ghcr.io/papabeardoes/swabbarr-api
+            context: ./api
+          - component: web
+            image: ghcr.io/papabeardoes/swabbarr-web
+            context: ./web
+
+    steps:
+      # =====================================================================
+      # Setup
+      # =====================================================================
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Free up disk space
+        run: |
+          echo "🧹 Cleaning up disk space..."
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          sudo docker image prune --all --force
+          df -h
+
+      # =====================================================================
+      # Docker Setup
+      # =====================================================================
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ matrix.image }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix=sha-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      # =====================================================================
+      # Build and Push
+      # =====================================================================
+      - name: Build and push ${{ matrix.component }} image
+        uses: docker/build-push-action@v7
+        with:
+          context: ${{ matrix.context }}
+          target: runtime
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # =====================================================================
+      # Summary
+      # =====================================================================
+      - name: Image digest
+        if: github.event_name != 'pull_request'
+        run: |
+          echo "## 🐳 ${{ matrix.component }} image built" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Image:** \`${{ matrix.image }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Tags:**" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+  # =====================================================================
+  # Deploy to K8s on Lofn (main branch only)
+  # =====================================================================
+  # After both images are built and pushed, SSH into Lofn and trigger
+  # a rolling update via kubectl. Each deployment gets its image tag
+  # set to the new SHA, then we wait for the rollout to complete.
+  #
+  # DISABLED: Uncomment when K8s namespace and deployments are set up
+  # on Lofn. Required secrets: LOFN_SSH_KEY, LOFN_SSH_USER
+  # =====================================================================
+  # deploy:
+  #   runs-on: ubuntu-latest
+  #   needs: [build-and-push]
+  #   if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+  #   timeout-minutes: 10
+  #   permissions:
+  #     contents: read
+  #
+  #   steps:
+  #     - name: Configure SSH
+  #       run: |
+  #         mkdir -p ~/.ssh
+  #         echo "${{ secrets.LOFN_SSH_KEY }}" > ~/.ssh/deploy_key
+  #         chmod 600 ~/.ssh/deploy_key
+  #         cat >> ~/.ssh/config << 'EOF'
+  #         Host lofn
+  #           HostName 10.20.30.253
+  #           User ${{ secrets.LOFN_SSH_USER }}
+  #           IdentityFile ~/.ssh/deploy_key
+  #           StrictHostKeyChecking no
+  #           UserKnownHostsFile /dev/null
+  #         EOF
+  #
+  #     - name: Deploy to K8s
+  #       run: |
+  #         DEPLOY_SHA="${{ github.sha }}"
+  #         SHA_SHORT="${DEPLOY_SHA:0:7}"
+  #
+  #         ssh lofn << DEPLOY_SCRIPT
+  #           set -euo pipefail
+  #           export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+  #           echo "🚀 Deploying Swabbarr images (SHA: $SHA_SHORT)"
+  #
+  #           kubectl set image deployment/swabbarr-api -n swabbarr \
+  #             swabbarr-api=ghcr.io/papabeardoes/swabbarr-api:latest
+  #           kubectl set image deployment/swabbarr-web -n swabbarr \
+  #             swabbarr-web=ghcr.io/papabeardoes/swabbarr-web:latest
+  #
+  #           kubectl annotate deployment/swabbarr-api -n swabbarr \
+  #             swabbarr/deploy-sha="${DEPLOY_SHA}" --overwrite
+  #           kubectl annotate deployment/swabbarr-web -n swabbarr \
+  #             swabbarr/deploy-sha="${DEPLOY_SHA}" --overwrite
+  #
+  #           echo "⏳ Waiting for swabbarr-api rollout..."
+  #           kubectl rollout status deployment/swabbarr-api -n swabbarr --timeout=300s
+  #
+  #           echo "⏳ Waiting for swabbarr-web rollout..."
+  #           kubectl rollout status deployment/swabbarr-web -n swabbarr --timeout=300s
+  #
+  #           echo "✅ All deployments rolled out successfully"
+  #         DEPLOY_SCRIPT
+  #
+  #     - name: Deploy summary
+  #       run: |
+  #         echo "## 🚀 Deployed to K8s on Lofn" >> $GITHUB_STEP_SUMMARY
+  #         echo "" >> $GITHUB_STEP_SUMMARY
+  #         echo "**Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+  #         echo "**Branch:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+  #         echo "" >> $GITHUB_STEP_SUMMARY
+  #         echo "| Deployment | Status |" >> $GITHUB_STEP_SUMMARY
+  #         echo "|------------|--------|" >> $GITHUB_STEP_SUMMARY
+  #         echo "| swabbarr-api | ✅ Rolled out |" >> $GITHUB_STEP_SUMMARY
+  #         echo "| swabbarr-web | ✅ Rolled out |" >> $GITHUB_STEP_SUMMARY
