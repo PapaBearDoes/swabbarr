@@ -35,3 +35,25 @@ export function timeAgo(iso: string | null): string {
   if (hours > 0) return `${hours}h ago`;
   return 'Just now';
 }
+
+/**
+ * Series status display info (Phase 9).
+ * Returns label, color, and emoji for Sonarr series_status values.
+ */
+export function seriesStatusInfo(status: string | null): {
+  label: string;
+  color: string;
+  emoji: string;
+} | null {
+  if (!status) return null;
+  switch (status.toLowerCase()) {
+    case 'continuing':
+      return { label: 'Airing', color: 'var(--accent-teal)', emoji: '📡' };
+    case 'ended':
+      return { label: 'Ended', color: 'var(--text-secondary)', emoji: '✓' };
+    case 'upcoming':
+      return { label: 'Upcoming', color: 'var(--accent-blue)', emoji: '📅' };
+    default:
+      return null;
+  }
+}

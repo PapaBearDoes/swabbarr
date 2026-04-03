@@ -8,8 +8,8 @@ fetch data → merge into unified records → apply signal calculators →
 compute weighted scores → persist results to PostgreSQL.
 
 ----------------------------------------------------------------------------
-FILE VERSION: v1.2.1
-LAST MODIFIED: 2026-04-02
+FILE VERSION: v1.3.0
+LAST MODIFIED: 2026-04-03
 COMPONENT: swabrr-api
 CLEAN ARCHITECTURE: Compliant
 Repository: https://github.com/PapaBearDoes/swabrr
@@ -182,6 +182,8 @@ class ScoringEngine:
                         arr_id=s.sonarr_id,
                         arr_source=s.arr_source,
                         added_at=s.added_at,
+                        series_status=s.status,
+                        series_total_episodes=s.total_episode_count,
                     )
                 self._log.info(f"Merged {len(series_list)} series from {client_name}")
             else:
@@ -362,8 +364,8 @@ class ScoringEngine:
                     INSERT INTO media_items (
                         tmdb_id, media_type, title, year, added_at,
                         file_size_bytes, quality_profile, arr_id,
-                        arr_source, episode_count
-                    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+                        arr_source, episode_count, series_status
+                    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
                     ON CONFLICT (tmdb_id) DO UPDATE SET
                         title = EXCLUDED.title,
                         file_size_bytes = EXCLUDED.file_size_bytes,
@@ -371,6 +373,7 @@ class ScoringEngine:
                         arr_id = EXCLUDED.arr_id,
                         arr_source = EXCLUDED.arr_source,
                         episode_count = EXCLUDED.episode_count,
+                        series_status = EXCLUDED.series_status,
                         updated_at = NOW()
                     """,
                     record.tmdb_id,
@@ -383,6 +386,7 @@ class ScoringEngine:
                     record.arr_id,
                     record.arr_source,
                     record.episode_count,
+                    record.series_status,
                 )
 
             # Get media_item IDs for FK references

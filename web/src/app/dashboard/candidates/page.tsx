@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { getCandidates, markRemoved, batchMarkRemoved, exportCandidatesCSV, protectTitle } from '@/lib/api';
-import { formatBytes, formatScore } from '@/lib/utils';
+import { formatBytes, formatScore, seriesStatusInfo } from '@/lib/utils';
 import { Trash2, CheckCircle, Download, Shield } from 'lucide-react';
 
 export default function CandidatesPage() {
@@ -182,7 +182,15 @@ export default function CandidatesPage() {
                   >{c.title}</a>
                   <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{c.year}</div>
                 </td>
-                <td><span style={{ fontSize: 12, textTransform: 'uppercase', color: 'var(--text-secondary)' }}>{c.arr_source === 'sonarr-anime' ? 'anime' : c.media_type}</span></td>
+                <td>
+                  <span style={{ fontSize: 12, textTransform: 'uppercase', color: 'var(--text-secondary)' }}>{c.arr_source === 'sonarr-anime' ? 'anime' : c.media_type}</span>
+                  {c.media_type === 'series' && (() => {
+                    const si = seriesStatusInfo(c.series_status);
+                    return si ? (
+                      <div style={{ fontSize: 11, color: si.color, marginTop: 2 }}>{si.emoji} {si.label}</div>
+                    ) : null;
+                  })()}
+                </td>
                 <td><span className="score-badge score-low">{formatScore(c.keep_score)}</span></td>
                 <td>{formatBytes(c.file_size_bytes)}</td>
                 <td><span style={{ fontSize: 13 }}>{formatScore(c.rarity_score || 0)}</span></td>

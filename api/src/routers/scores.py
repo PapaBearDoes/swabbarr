@@ -7,8 +7,8 @@ Scores router — exposes score results, candidates, breakdowns, trends,
 and dashboard summary statistics.
 
 ----------------------------------------------------------------------------
-FILE VERSION: v1.0.1
-LAST MODIFIED: 2026-04-02
+FILE VERSION: v1.1.0
+LAST MODIFIED: 2026-04-03
 COMPONENT: swabrr-api
 CLEAN ARCHITECTURE: Compliant
 Repository: https://github.com/PapaBearDoes/swabrr
@@ -99,7 +99,7 @@ async def list_scores(
             f"""
             SELECT mi.tmdb_id, mi.title, mi.year, mi.media_type,
                    mi.file_size_bytes, mi.quality_profile, mi.episode_count,
-                   mi.poster_url,
+                   mi.poster_url, mi.series_status,
                    ms.keep_score, ms.watch_activity_score, ms.rarity_score,
                    ms.request_score, ms.size_efficiency_score,
                    ms.cultural_value_score, ms.is_candidate,
@@ -128,6 +128,7 @@ async def list_scores(
             "quality_profile": r["quality_profile"],
             "episode_count": r["episode_count"],
             "poster_url": r["poster_url"],
+            "series_status": r["series_status"],
             "keep_score": float(r["keep_score"]),
             "watch_activity_score": float(r["watch_activity_score"] or 0),
             "rarity_score": float(r["rarity_score"] or 0),
@@ -215,7 +216,7 @@ async def list_candidates(
             f"""
             SELECT mi.tmdb_id, mi.title, mi.year, mi.media_type,
                    mi.file_size_bytes, mi.poster_url, mi.episode_count,
-                   mi.arr_source,
+                   mi.arr_source, mi.series_status,
                    ms.keep_score, ms.watch_activity_score, ms.rarity_score,
                    ms.request_score, ms.size_efficiency_score,
                    ms.cultural_value_score

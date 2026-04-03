@@ -8,8 +8,8 @@ Defines the unified MediaRecord that merges data from all sources,
 plus score result models.
 
 ----------------------------------------------------------------------------
-FILE VERSION: v1.0.0
-LAST MODIFIED: 2026-04-01
+FILE VERSION: v1.1.0
+LAST MODIFIED: 2026-04-03
 COMPONENT: swabrr-api
 CLEAN ARCHITECTURE: Compliant
 Repository: https://github.com/PapaBearDoes/swabrr
@@ -55,6 +55,10 @@ class MediaRecord:
     tmdb_rating: float | None = None
     tmdb_vote_count: int | None = None
     streaming_service_count: int | None = None
+
+    # Series status data (from Sonarr — Phase 9)
+    series_status: str | None = None  # 'continuing', 'ended', 'upcoming'
+    series_total_episodes: int | None = None  # Total known episodes
 
     # Flags
     is_protected: bool = False

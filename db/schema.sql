@@ -5,8 +5,8 @@
 -- Full PostgreSQL schema for Swabrr.
 -- Apply with: psql -U swabrr -d swabrr -f schema.sql
 --
--- FILE VERSION: v1.0.0
--- LAST MODIFIED: 2026-04-01
+-- FILE VERSION: v1.1.0
+-- LAST MODIFIED: 2026-04-03
 -- COMPONENT: swabrr-db
 -- ============================================================================
 
@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS media_items (
     arr_id          INTEGER,
     arr_source      VARCHAR(20) CHECK (arr_source IN ('radarr', 'sonarr', 'sonarr-anime')),
     episode_count   INTEGER,
+    series_status   VARCHAR(20),
     poster_url      VARCHAR(500),
     created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()

@@ -7,8 +7,8 @@ Signal calculators for the five scoring categories.
 Each function takes a MediaRecord and returns a score from 0–100.
 
 ----------------------------------------------------------------------------
-FILE VERSION: v1.0.1
-LAST MODIFIED: 2026-04-02
+FILE VERSION: v1.1.0
+LAST MODIFIED: 2026-04-03
 COMPONENT: swabrr-api
 CLEAN ARCHITECTURE: Compliant
 Repository: https://github.com/PapaBearDoes/swabrr
@@ -53,15 +53,81 @@ def _clamp(value: float, low: float = 0.0, high: float = 100.0) -> float:
 
 
 # ---------------------------------------------------------------------------
+# Series completion modifier (Phase 9)
+# ---------------------------------------------------------------------------
+def _calc_series_completion_modifier(record: MediaRecord) -> float:
+    """Calculate a bonus or penalty based on series status and episode completion.
+
+    Only applies to series with valid status data from Sonarr.
+    Returns a modifier that is added to the base watch activity score:
+      - Continuing + caught up:   +15 (actively following)
+      - Continuing + mostly up:   +8  (keeping up)
+      - Ended + never watched:    -10 (dead weight)
+      - Ended + half-abandoned:   -5  (started then stopped)
+      - Everything else:          0   (neutral)
+
+    Movies and series without status data are always 0 (no effect).
+    """
+    if record.media_type != "series":
+        return 0.0
+    if not record.series_status:
+        return 0.0
+
+    status = record.series_status.lower()
+
+    # Calculate episode completion ratio if we have the data
+    completion_ratio: float | None = None
+    if (
+        record.episode_count is not None
+        and record.series_total_episodes is not None
+        and record.series_total_episodes > 0
+    ):
+        completion_ratio = record.episode_count / record.series_total_episodes
+
+    if status == "continuing":
+        if completion_ratio is not None:
+            if completion_ratio >= 0.95:
+                return 15.0  # Caught up — someone is actively following
+            elif completion_ratio >= 0.75:
+                return 8.0  # Mostly caught up
+        # Continuing but low completion or unknown — no modifier
+        return 0.0
+
+    if status == "ended":
+        if record.total_plays == 0:
+            return -10.0  # Ended + never watched = dead weight
+        if completion_ratio is not None and completion_ratio < 0.50:
+            return -5.0  # Ended + less than half watched
+        return 0.0
+
+    # 'upcoming' or any unexpected value — neutral
+    return 0.0
+
+
+# ---------------------------------------------------------------------------
 # Signal 1: Watch Activity (default weight: 40%)
 # ---------------------------------------------------------------------------
 def calc_watch_activity(record: MediaRecord) -> float:
-    """Score based on play count, unique viewers, recency, and completion.
+    """Score based on play count, unique viewers, recency, completion,
+    and series status.
 
-    0 = never watched. 100 = heavily watched recently by many users.
+    0 = never watched (or ended + never watched with penalty).
+    100 = heavily watched recently by many users.
+
+    For series, the score is modified by whether the series is ongoing
+    and how caught up the library is on available episodes (Phase 9).
     """
+    # --- Series completion modifier (Phase 9) ---
+    # Calculated first because it can apply even to unwatched series
+    # (e.g. ended + never watched penalty)
+    series_modifier = _calc_series_completion_modifier(record)
+
     if record.total_plays == 0:
-        return 0.0
+        # No watch history — base score is 0, but series modifier can
+        # push it negative (clamped to 0) for ended+unwatched series.
+        # A continuing series with 0 plays stays at 0 (no bonus for
+        # something nobody has started watching).
+        return _clamp(0.0 + series_modifier)
 
     # --- Viewer ratio (0–30 points) ---
     # What fraction of total users have watched this?
@@ -86,6 +152,7 @@ def calc_watch_activity(record: MediaRecord) -> float:
     completion_score = (record.avg_completion_pct / 100.0) * 15.0
 
     total = viewer_score + play_score + recency_score + completion_score
+    total += series_modifier
     return _clamp(total)
 
 

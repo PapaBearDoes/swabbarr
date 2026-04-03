@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { getScores, getSummary, triggerScoring, getStatus } from '@/lib/api';
-import { formatBytes, formatScore, scoreColor, timeAgo } from '@/lib/utils';
+import { formatBytes, formatScore, scoreColor, timeAgo, seriesStatusInfo } from '@/lib/utils';
 import { Play, RefreshCw, ChevronUp, ChevronDown } from 'lucide-react';
 
 type SortField = 'keep_score' | 'file_size' | 'title' | 'last_watched';
@@ -149,7 +149,15 @@ export default function DashboardPage() {
                   <div style={{ fontWeight: 600 }}>{s.title}</div>
                   <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{s.year}</div>
                 </td>
-                <td><span style={{ fontSize: 12, textTransform: 'uppercase', color: 'var(--text-secondary)' }}>{s.media_type}</span></td>
+                <td>
+                  <span style={{ fontSize: 12, textTransform: 'uppercase', color: 'var(--text-secondary)' }}>{s.media_type}</span>
+                  {s.media_type === 'series' && (() => {
+                    const si = seriesStatusInfo(s.series_status);
+                    return si ? (
+                      <div style={{ fontSize: 11, color: si.color, marginTop: 2 }}>{si.emoji} {si.label}</div>
+                    ) : null;
+                  })()}
+                </td>
                 <td>
                   <span className={`score-badge ${s.keep_score >= 70 ? 'score-high' : s.keep_score >= 30 ? 'score-mid' : 'score-low'}`}>
                     {formatScore(s.keep_score)}

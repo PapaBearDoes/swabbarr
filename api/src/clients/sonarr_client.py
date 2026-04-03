@@ -7,8 +7,8 @@ Sonarr API client. Fetches TV series metadata, episode counts, file sizes,
 and TVDB/TMDB IDs. Used for both Sonarr and Sonarr-Anime instances.
 
 ----------------------------------------------------------------------------
-FILE VERSION: v1.0.1
-LAST MODIFIED: 2026-04-02
+FILE VERSION: v1.1.0
+LAST MODIFIED: 2026-04-03
 COMPONENT: swabrr-api
 CLEAN ARCHITECTURE: Compliant
 Repository: https://github.com/PapaBearDoes/swabrr
@@ -35,6 +35,8 @@ class SonarrSeries:
     quality_profile: str | None
     added_at: str | None
     arr_source: str  # 'sonarr' or 'sonarr-anime'
+    status: str | None = None  # 'continuing', 'ended', 'upcoming'
+    total_episode_count: int | None = None  # Total known episodes (aired + future)
 
 
 class SonarrClient(BaseClient):
@@ -113,6 +115,8 @@ class SonarrClient(BaseClient):
                         quality_profile=item.get("qualityProfileId"),
                         added_at=item.get("added"),
                         arr_source=self._arr_source,
+                        status=item.get("status"),
+                        total_episode_count=stats.get("totalEpisodeCount"),
                     )
                 )
             except Exception as e:
