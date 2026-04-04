@@ -6,8 +6,8 @@ Swabrr — Media Library Pruning Engine
 Config router — read and update scoring weights and threshold.
 
 ----------------------------------------------------------------------------
-FILE VERSION: v1.0.0
-LAST MODIFIED: 2026-04-01
+FILE VERSION: v1.1.0
+LAST MODIFIED: 2026-04-04
 COMPONENT: swabrr-api
 CLEAN ARCHITECTURE: Compliant
 Repository: https://github.com/PapaBearDoes/swabrr
@@ -28,6 +28,8 @@ class WeightsUpdate(BaseModel):
     request_accountability: float = Field(ge=0, le=100)
     size_efficiency: float = Field(ge=0, le=100)
     cultural_value: float = Field(ge=0, le=100)
+    classic_age_threshold: int | None = Field(default=None, ge=15, le=30)
+    classic_bonus_points: float | None = Field(default=None, ge=0, le=10)
 
 
 class ThresholdUpdate(BaseModel):
@@ -48,6 +50,8 @@ async def get_weights(request: Request):
         "size_efficiency": weights.size_efficiency,
         "cultural_value": weights.cultural_value,
         "candidate_threshold": weights.candidate_threshold,
+        "classic_age_threshold": weights.classic_age_threshold,
+        "classic_bonus_points": weights.classic_bonus_points,
     }
 
 
@@ -66,6 +70,8 @@ async def update_weights(request: Request, body: WeightsUpdate):
         size_efficiency=body.size_efficiency,
         cultural_value=body.cultural_value,
         candidate_threshold=current.candidate_threshold,
+        classic_age_threshold=body.classic_age_threshold if body.classic_age_threshold is not None else current.classic_age_threshold,
+        classic_bonus_points=body.classic_bonus_points if body.classic_bonus_points is not None else current.classic_bonus_points,
     )
     success = await config.update_weights(new_weights)
     if not success:

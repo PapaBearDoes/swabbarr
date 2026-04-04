@@ -8,8 +8,8 @@ fetch data → merge into unified records → apply signal calculators →
 compute weighted scores → persist results to PostgreSQL.
 
 ----------------------------------------------------------------------------
-FILE VERSION: v1.3.0
-LAST MODIFIED: 2026-04-03
+FILE VERSION: v1.4.0
+LAST MODIFIED: 2026-04-04
 COMPONENT: swabrr-api
 CLEAN ARCHITECTURE: Compliant
 Repository: https://github.com/PapaBearDoes/swabrr
@@ -296,6 +296,18 @@ class ScoringEngine:
                 + size_eff * (weights.size_efficiency / 100.0)
                 + cultural * (weights.cultural_value / 100.0)
             )
+
+            # Classic title bonus — flat boost for older titles
+            # Applied after weighted sum, before clamping, so it raises
+            # the floor for titles that have stood the test of time.
+            current_year = datetime.now(timezone.utc).year
+            if (
+                weights.classic_bonus_points > 0
+                and record.year is not None
+                and (current_year - record.year) >= weights.classic_age_threshold
+            ):
+                keep_score += weights.classic_bonus_points
+
             keep_score = round(min(max(keep_score, 0.0), 100.0), 2)
 
             is_candidate = (

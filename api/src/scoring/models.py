@@ -8,8 +8,8 @@ Defines the unified MediaRecord that merges data from all sources,
 plus score result models.
 
 ----------------------------------------------------------------------------
-FILE VERSION: v1.1.0
-LAST MODIFIED: 2026-04-03
+FILE VERSION: v1.2.0
+LAST MODIFIED: 2026-04-04
 COMPONENT: swabrr-api
 CLEAN ARCHITECTURE: Compliant
 Repository: https://github.com/PapaBearDoes/swabrr
@@ -91,6 +91,8 @@ class ScoringWeights:
     size_efficiency: float = 15.0
     cultural_value: float = 10.0
     candidate_threshold: float = 30.0
+    classic_age_threshold: int = 20  # Years — titles older than this get bonus
+    classic_bonus_points: float = 5.0  # Flat points added to keep_score (0–10)
 
 
 @dataclass

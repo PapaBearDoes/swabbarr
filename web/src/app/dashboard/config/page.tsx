@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { getWeights, updateWeights, updateThreshold, getSchedule, updateSchedule } from '@/lib/api';
-import { Save, Clock } from 'lucide-react';
+import { Save, Clock, Award } from 'lucide-react';
 
 export default function ConfigPage() {
   const [weights, setWeights] = useState({
@@ -10,6 +10,8 @@ export default function ConfigPage() {
     request_accountability: 15, size_efficiency: 15, cultural_value: 10,
   });
   const [threshold, setThreshold] = useState(30);
+  const [classicAge, setClassicAge] = useState(20);
+  const [classicBonus, setClassicBonus] = useState(5);
   const [cron, setCron] = useState('0 3 * * 0');
   const [nextRun, setNextRun] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -26,6 +28,8 @@ export default function ConfigPage() {
           size_efficiency: w.size_efficiency, cultural_value: w.cultural_value,
         });
         setThreshold(w.candidate_threshold);
+        setClassicAge(w.classic_age_threshold ?? 20);
+        setClassicBonus(w.classic_bonus_points ?? 5);
         setCron(s.cron_expression || '0 3 * * 0');
         setNextRun(s.next_run);
       } catch (e) { console.error(e); }
@@ -45,7 +49,7 @@ export default function ConfigPage() {
     if (!isValid) { setMessage('Weights must sum to 100'); return; }
     setSaving(true);
     try {
-      await updateWeights(weights);
+      await updateWeights({ ...weights, classic_age_threshold: classicAge, classic_bonus_points: classicBonus });
       await updateThreshold(threshold);
       setMessage('Configuration saved!');
     } catch (e: any) { setMessage(e.message || 'Save failed'); }
@@ -165,6 +169,54 @@ export default function ConfigPage() {
               </button>
             ))}
           </div>
+        </div>
+      </div>
+
+      {/* Classic Title Bonus */}
+      <div className="card" style={{ marginTop: 24 }}>
+        <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4 }}>
+          <Award size={18} style={{ display: 'inline', marginRight: 8, verticalAlign: 'middle', color: 'var(--accent-amber)' }} />
+          Classic Title Bonus
+        </h2>
+        <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 20 }}>
+          Titles older than <span style={{ color: 'var(--accent-amber)', fontWeight: 700 }}>{classicAge} years</span> receive
+          a <span style={{ color: 'var(--accent-teal)', fontWeight: 700 }}>+{classicBonus} point</span> bonus to their keep score.
+          {classicBonus === 0 && <span style={{ fontStyle: 'italic', marginLeft: 4 }}>(disabled)</span>}
+        </p>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+              <label style={{ fontSize: 13, fontWeight: 500 }}>Age Threshold</label>
+              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent-amber)' }}>{classicAge} years</span>
+            </div>
+            <input
+              type="range" min={15} max={30} step={5}
+              value={classicAge}
+              onChange={e => { setClassicAge(Number(e.target.value)); setMessage(''); }}
+              style={{ width: '100%', accentColor: 'var(--accent-amber)' }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
+              <span>15 yr</span><span>20 yr</span><span>25 yr</span><span>30 yr</span>
+            </div>
+          </div>
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+              <label style={{ fontSize: 13, fontWeight: 500 }}>Bonus Points</label>
+              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent-teal)' }}>+{classicBonus}</span>
+            </div>
+            <input
+              type="range" min={0} max={10} step={1}
+              value={classicBonus}
+              onChange={e => { setClassicBonus(Number(e.target.value)); setMessage(''); }}
+              style={{ width: '100%', accentColor: 'var(--accent-teal)' }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
+              <span>0 (off)</span><span>5</span><span>10</span>
+            </div>
+          </div>
+        </div>
+        <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 12 }}>
+          Applied as a flat boost after the weighted score is calculated. Saved with the weights above.
         </div>
       </div>
 
