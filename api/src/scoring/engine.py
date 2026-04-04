@@ -8,7 +8,7 @@ fetch data → merge into unified records → apply signal calculators →
 compute weighted scores → persist results to PostgreSQL.
 
 ----------------------------------------------------------------------------
-FILE VERSION: v1.4.0
+FILE VERSION: v1.5.0
 LAST MODIFIED: 2026-04-04
 COMPONENT: swabrr-api
 CLEAN ARCHITECTURE: Compliant
@@ -537,16 +537,28 @@ class ScoringEngine:
 
             # Step 4: Stale candidate detection
             # Titles in media_items that are no longer in *arr responses
-            # were deleted outside Swabrr — auto-move to removal_history
+            # were deleted outside Swabrr — auto-move to removal_history.
+            # Skip titles already archived to prevent duplicate entries.
             current_tmdb_ids = {r.tmdb_id for r in records}
             stale_count = 0
             async with self._db.acquire() as conn:
+                # Get TMDB IDs already in removal_history to avoid duplicates
+                already_removed = await conn.fetch(
+                    "SELECT DISTINCT tmdb_id FROM removal_history"
+                )
+                already_removed_ids = {row["tmdb_id"] for row in already_removed}
+
                 existing = await conn.fetch(
                     "SELECT id, tmdb_id, title, media_type, file_size_bytes "
                     "FROM media_items"
                 )
+                stale_ids = []
                 for row in existing:
                     if row["tmdb_id"] not in current_tmdb_ids:
+                        # Skip if already in removal_history
+                        if row["tmdb_id"] in already_removed_ids:
+                            stale_ids.append(row["id"])
+                            continue
                         # Get last score
                         last_score = await conn.fetchval(
                             "SELECT keep_score FROM media_scores "
@@ -567,7 +579,15 @@ class ScoringEngine:
                             row["file_size_bytes"],
                             float(last_score) if last_score else None,
                         )
+                        stale_ids.append(row["id"])
                         stale_count += 1
+
+                # Clean up stale media_items so they don't trigger again
+                if stale_ids:
+                    await conn.execute(
+                        "DELETE FROM media_items WHERE id = ANY($1)",
+                        stale_ids,
+                    )
 
             if stale_count > 0:
                 self._log.info(
